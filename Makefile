@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CFLAGS=-Wall -Wpedantic -g
+CFLAGS=-Wall -Wpedantic -g -fsanitize=bounds -fsanitize=address
 BINS=test
 
 test: test.o Range.o simple_string.o

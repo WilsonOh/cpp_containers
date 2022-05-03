@@ -16,12 +16,14 @@ public:
 };
 
 simple_string uppercase(simple_string s) {
-  std::transform(s.begin(), s.end(), s.begin(),
-                 [](char &c) { return toupper(c); });
+  std::transform(s.cbegin(), s.cend(), s.begin(),
+                 [](const char &c) { return toupper(c); });
   return s;
 }
 
 int main(void) {
   simple_string s("hell");
-  std::cout << uppercase(s) << '\n';
+  simple_string t("bye");
+  const char &x = s[2];
+  std::cout << s << '\n';
 }
