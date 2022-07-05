@@ -4,6 +4,7 @@
 #include <cctype>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <vector>
 
@@ -21,9 +22,18 @@ simple_string uppercase(simple_string s) {
   return s;
 }
 
+template <typename T>
+std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
+  out << "[ ";
+  for (const simple_string &word : v) {
+    out << word << " ";
+  }
+  out << "]";
+  return out;
+}
+
 int main(void) {
-  simple_string s("hell");
-  simple_string t("bye");
-  const char &x = s[2];
-  std::cout << s << '\n';
+  simple_string s("hello, this, is, a, test");
+  auto words = s.split(", ");
+  std::cout << simple_string::join("::", words);
 }

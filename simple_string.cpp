@@ -1,4 +1,4 @@
-#define FMT_HEADER_ONLY
+#include <cctype>
 
 #include "simple_string.hpp"
 #include <algorithm>
@@ -22,7 +22,7 @@ char *simple_string::strnew(const char *s) {
   return nullptr;
 }
 
-simple_string::simple_string() : _str(nullptr) {}
+simple_string::simple_string() : _str(strnew("")) {}
 
 simple_string::simple_string(const char *s) : _str(strnew(s)) {
   // std::cout << "Constructed using const char * copy\n";
@@ -98,13 +98,25 @@ bool simple_string::operator<(const simple_string &other) const {
   return strcmp(_str, other._str) < 0;
 }
 
-simple_string simple_string::operator+(const simple_string &other) {
+simple_string simple_string::operator+(const simple_string &other) const {
   std::size_t new_size = _size + other._size;
   char *new_str = new char[new_size + 1];
   std::copy(_str, _str + _size, new_str);
   std::copy(other._str, other._str + other._size, new_str + _size);
   new_str[new_size] = 0;
-  return {new_str};
+  simple_string ret(new_str);
+  delete [] new_str;
+  return ret;
+}
+
+void simple_string::operator+=(const simple_string &other) {
+  std::size_t new_size = _size + other._size;
+  char *new_str = new char[new_size + 1];
+  std::copy(_str, _str + _size, new_str);
+  std::copy(other._str, other._str + other._size, new_str + _size);
+  new_str[new_size] = 0;
+  *this = {new_str};
+  delete[] new_str;
 }
 
 char &simple_string::operator[](std::size_t idx) {
@@ -121,6 +133,97 @@ const char &simple_string::operator[](std::size_t idx) const {
         fmt::format("idx {} out of bounds for string of size {}", idx, _size));
   }
   return _str[idx];
+}
+
+simple_string simple_string::upper() const {
+  simple_string ret = *this;
+  std::transform(this->cbegin(), this->cend(), ret.begin(),
+                 [](const char &c) { return toupper(c); });
+  return ret;
+}
+
+simple_string simple_string::lower() const {
+  simple_string ret = *this;
+  std::transform(this->cbegin(), this->cend(), ret.begin(),
+                 [](const char &c) { return tolower(c); });
+  return ret;
+}
+
+simple_string simple_string::substr(const std::size_t &start,
+                                    const std::size_t &offset) const {
+  if (start + offset > _size) {
+    throw std::invalid_argument("out of bounds substring");
+  }
+  char *tmp = new char[offset + 1];
+  std::memcpy(tmp, _str + start, offset);
+  tmp[offset] = 0;
+  simple_string ret(tmp);
+  delete[] tmp;
+  return ret;
+}
+
+simple_string simple_string::substr(const std::size_t &start) const {
+  if (start > _size) {
+    throw std::invalid_argument("out of bounds substring");
+  }
+  std::size_t len = _size - start;
+  char *tmp = new char[len + 1];
+  std::memcpy(tmp, _str + start, len);
+  tmp[len] = 0;
+  simple_string ret(tmp);
+  delete[] tmp;
+  return ret;
+}
+
+std::size_t simple_string::length() const { return _size; }
+
+bool simple_string::empty() const { return _size == 0; }
+
+int simple_string::find(const simple_string &needle,
+                        const std::size_t &start) const {
+  if (needle.empty()) {
+    throw std::invalid_argument("cannot find empty string");
+  }
+  for (std::size_t i = start; i < _size - needle.length() + 1; ++i) {
+    if (_str[i] == needle[0]) {
+      if (needle == this->substr(i, needle.length())) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
+std::vector<simple_string>
+simple_string::split(const simple_string &delimiter) const {
+  size_t pos_start = 0;
+  size_t pos_end;
+  size_t delim_len = delimiter.length();
+  simple_string token;
+  std::vector<simple_string> res;
+
+  while ((pos_end = this->find(delimiter, pos_start)) != std::string::npos) {
+    token = this->substr(pos_start, pos_end - pos_start);
+    pos_start = pos_end + delim_len;
+    res.emplace_back(token);
+  }
+
+  simple_string last = this->substr(pos_start);
+  if (!last.empty())
+    res.emplace_back(last);
+  return res;
+}
+
+simple_string simple_string::join(const simple_string &delim,
+                                  const std::vector<simple_string> &words) {
+  simple_string ret;
+  for (std::size_t i = 0; i < words.size(); ++i) {
+    ret += words[i];
+    if (i < words.size() - 1) {
+      ret += delim;
+    }
+  }
+  return ret;
 }
 
 simple_string_iterator simple_string::begin() { return {*this, 0}; }

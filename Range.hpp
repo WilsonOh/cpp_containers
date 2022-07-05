@@ -3,7 +3,7 @@
 
 #include <iterator>
 
-class RangeIterator : public std::iterator<std::input_iterator_tag, long> {
+class RangeIterator {
   long _num;
   long _step;
   long _end;
