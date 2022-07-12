@@ -103,6 +103,21 @@ public:
 
   bool empty() const { return head == nullptr; }
 
+  LinkedList operator+(const LinkedList &other) const {
+    LinkedList tmp(*this);
+    for (const auto &i : other) {
+      tmp.push_right(i);
+    }
+    return tmp;
+  }
+
+  LinkedList &operator+=(const LinkedList &other) {
+    for (const auto &i : other) {
+      push_right(i);
+    }
+    return *this;
+  }
+
   T &operator[](const std::size_t &idx) {
     if (idx >= _size) {
       throw std::invalid_argument("cannot access index " + std::to_string(idx) +
