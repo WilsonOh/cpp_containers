@@ -13,16 +13,16 @@ template <typename T> class LinkedListConstIterator;
 
 template <typename T> struct Node {
   T data;
-  std::shared_ptr<Node> next;
-  std::shared_ptr<Node> prev;
+  std::unique_ptr<Node> next;
+  Node* prev;
 
   Node(T _data) : data(_data) {}
 };
 
 template <typename T> class LinkedList {
 
-  std::shared_ptr<Node<T>> head;
-  std::shared_ptr<Node<T>> tail;
+  std::unique_ptr<Node<T>> head;
+  Node<T>* tail;
   std::size_t _size = 0;
 
 public:
@@ -45,11 +45,11 @@ public:
     Node<T> *new_node = new Node(data);
     if (empty()) {
       head.reset(new_node);
-      tail = head;
+      tail = new_node;
     } else {
       tail->next.reset(new_node);
       tail->next->prev = tail;
-      tail = tail->next;
+      tail = new_node;
     }
   }
 
@@ -58,11 +58,11 @@ public:
     Node<T> *new_node = new Node(data);
     if (empty()) {
       head.reset(new_node);
-      tail = head;
+      tail = new_node;
     } else {
-      head->prev.reset(new_node);
-      head->prev->next = head;
-      head = head->prev;
+      head->prev = new_node;
+      head->prev->next.reset(new_node);
+      head.swap(head->prev->next);
     }
   }
 
@@ -93,7 +93,10 @@ public:
       return ret;
     }
     _size -= 1;
-    head = head->next;
+    head->next->prev = nullptr;
+    Node<T> *tmp = head.release();
+    head.swap(tmp->next);
+    delete tmp;
     return ret;
   }
 
@@ -125,16 +128,16 @@ public:
     }
     if (idx > _size / 2) {
       std::size_t curr_idx = _size - idx - 1;
-      auto curr = tail;
+      Node<T> *curr = tail;
       while (curr_idx--) {
         curr = curr->prev;
       }
       return curr->data;
     }
     std::size_t curr_idx = idx;
-    auto curr = head;
+    Node<T> *curr = head.get();
     while (curr_idx--) {
-      curr = curr->next;
+      curr = curr->next.get();
     }
     return curr->data;
   }
@@ -146,16 +149,16 @@ public:
     }
     if (idx > _size / 2) {
       std::size_t curr_idx = _size - idx - 1;
-      auto curr = tail;
+      Node<T> *curr = tail;
       while (curr_idx--) {
         curr = curr->prev;
       }
       return curr->data;
     }
     std::size_t curr_idx = idx;
-    auto curr = head;
+    Node<T> *curr = head.get();
     while (curr_idx--) {
-      curr = curr->next;
+      curr = curr->next.get();
     }
     return curr->data;
   }
@@ -176,11 +179,11 @@ public:
 
   std::size_t size() { return _size; }
 
-  LinkedListIterator<T> begin() { return {head}; }
-  LinkedListConstIterator<T> begin() const { return {head}; }
+  LinkedListIterator<T> begin() { return {head.get()}; }
+  LinkedListConstIterator<T> begin() const { return {head.get()}; }
 
-  LinkedListIterator<T> end() { return {tail->next}; }
-  LinkedListConstIterator<T> end() const { return {tail->next}; }
+  LinkedListIterator<T> end() { return {tail->next.get()}; }
+  LinkedListConstIterator<T> end() const { return {tail->next.get()}; }
 
   LinkedListIterator<T> rbegin() { return {tail}; }
   LinkedListConstIterator<T> rbegin() const { return {tail}; }
@@ -191,12 +194,12 @@ public:
   LinkedListConstIterator<T> rcbegin() const { return {tail}; }
   LinkedListConstIterator<T> rcend() const { return {head->prev}; }
 
-  LinkedListConstIterator<T> cbegin() const { return {head}; }
-  LinkedListConstIterator<T> cend() const { return {tail->next}; }
+  LinkedListConstIterator<T> cbegin() const { return {head.get()}; }
+  LinkedListConstIterator<T> cend() const { return {tail->next.get()}; }
 
   friend std::ostream &operator<<(std::ostream &out, const LinkedList &ll) {
     out << "[ ";
-    for (const auto &i : ll) {
+    for (auto &i : ll) {
       out << i << ' ';
     }
     out << ']';
@@ -205,22 +208,22 @@ public:
 };
 
 template <typename T> class LinkedListIterator {
-  std::shared_ptr<Node<T>> curr;
+  Node<T> *curr;
 
   using iterator_category = std::bidirectional_iterator_tag;
   using value_type = T;
 
 public:
-  LinkedListIterator(std::shared_ptr<Node<T>> node) : curr(node) {}
+  LinkedListIterator(Node<T> *node) : curr(node) {}
 
   LinkedListIterator &operator++() {
-    curr = curr->next;
+    curr = curr->next.get();
     return *this;
   }
 
   LinkedListIterator operator++(int) {
-    std::unique_ptr<Node<T>> tmp = curr;
-    curr = curr->next;
+    Node<T> *tmp = curr;
+    curr = curr->next.get();
     return {curr};
   }
 
@@ -230,7 +233,7 @@ public:
   }
 
   LinkedListIterator operator--(int) {
-    std::unique_ptr<Node<T>> tmp = curr;
+    Node<T> *tmp = curr;
     curr = curr->prev;
     return {curr};
   }
@@ -249,22 +252,22 @@ public:
 };
 
 template <typename T> class LinkedListConstIterator {
-  std::shared_ptr<Node<T>> curr;
+  Node<T> *curr;
 
   using iterator_category = std::bidirectional_iterator_tag;
   using value_type = T;
 
 public:
-  LinkedListConstIterator(std::shared_ptr<Node<T>> node) : curr(node) {}
+  LinkedListConstIterator(Node<T> *node) : curr(node) {}
 
   LinkedListConstIterator &operator++() {
-    curr = curr->next;
+    curr = curr->next.get();
     return *this;
   }
 
   LinkedListConstIterator operator++(int) {
-    std::unique_ptr<Node<T>> tmp = curr;
-    curr = curr->next;
+    Node<T> *tmp = curr;
+    curr = curr->next.get();
     return {curr};
   }
 
@@ -274,7 +277,7 @@ public:
   }
 
   LinkedListConstIterator operator--(int) {
-    std::unique_ptr<Node<T>> tmp = curr;
+    Node<T> *tmp = curr;
     curr = curr->prev;
     return {curr};
   }
