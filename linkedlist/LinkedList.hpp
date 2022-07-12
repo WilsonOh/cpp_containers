@@ -93,10 +93,7 @@ public:
       return ret;
     }
     _size -= 1;
-    head->next->prev = nullptr;
-    Node<T> *tmp = head.release();
-    head.swap(tmp->next);
-    delete tmp;
+    head = std::move(head->next);
     return ret;
   }
 
