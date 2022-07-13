@@ -42,6 +42,20 @@ public:
     _size = other._size;
   }
 
+  ArrayList &operator=(const ArrayList &other) {
+    ArrayList tmp(other);
+    data = std::move(tmp.data);
+    _size = tmp._size;
+    return *this;
+  }
+
+  ArrayList &operator=(ArrayList &&other) {
+    data = std::move(other.data);
+    _size = other._size;
+    other._size = 0;
+    return *this;
+  }
+
   friend std::ostream &operator<<(std::ostream &out, const ArrayList &al) {
     out << "[ ";
     for (std::size_t i = 0; i < al._size; ++i) {
