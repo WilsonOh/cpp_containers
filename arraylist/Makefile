@@ -9,6 +9,7 @@ run: main
 test: test_array_list.cpp ArrayList.hpp
 	$(CC) $(CFLAGS) $< -o $@
 	./test
+	rm test
 
 main: main.cpp ArrayList.hpp
 	$(CC) $(CFLAGS) $< -o $@

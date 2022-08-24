@@ -3,9 +3,9 @@
 #include "simple_string.hpp"
 #include <algorithm>
 #include <cstring>
-#include <fmt/core.h>
 #include <initializer_list>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 /**
@@ -54,7 +54,7 @@ simple_string::~simple_string() {
   delete[] _str;
 }
 
-std::size_t simple_string::size() { return _size; }
+std::size_t simple_string::size() const { return _size; }
 
 char *simple_string::c_str() { return _str; }
 
@@ -105,7 +105,7 @@ simple_string simple_string::operator+(const simple_string &other) const {
   std::copy(other._str, other._str + other._size, new_str + _size);
   new_str[new_size] = 0;
   simple_string ret(new_str);
-  delete [] new_str;
+  delete[] new_str;
   return ret;
 }
 
@@ -121,16 +121,18 @@ void simple_string::operator+=(const simple_string &other) {
 
 char &simple_string::operator[](std::size_t idx) {
   if (idx >= _size) {
-    throw std::invalid_argument(
-        fmt::format("idx {} out of bounds for string of size {}", idx, _size));
+    std::ostringstream ss;
+    ss << "idx " << idx << " out of bounds for string of size " << _size;
+    throw std::invalid_argument(ss.str());
   }
   return _str[idx];
 }
 
 const char &simple_string::operator[](std::size_t idx) const {
   if (idx >= _size) {
-    throw std::invalid_argument(
-        fmt::format("idx {} out of bounds for string of size {}", idx, _size));
+    std::ostringstream ss;
+    ss << "idx " << idx << " out of bounds for string of size " << _size;
+    throw std::invalid_argument(ss.str());
   }
   return _str[idx];
 }
@@ -182,7 +184,7 @@ bool simple_string::empty() const { return _size == 0; }
 int simple_string::find(const simple_string &needle,
                         const std::size_t &start) const {
   if (needle.empty()) {
-    throw std::invalid_argument("cannot find empty string");
+    return -1;
   }
   for (std::size_t i = start; i < _size - needle.length() + 1; ++i) {
     if (_str[i] == needle[0]) {
@@ -325,3 +327,65 @@ bool simple_string_const_iterator::operator!=(
 }
 
 const char &simple_string_const_iterator::operator*() const { return _s[_pos]; }
+
+simple_string_split_iterator::simple_string_split_iterator(
+    const simple_string &haystack, const simple_string &delimeter, bool end)
+    : remainder(haystack), m_delimiter(delimeter), done(end) {
+  ++*this;
+}
+
+[[nodiscard]] simple_string simple_string_split_iterator::find_next_chunk() {
+  int next_chunk_pos = this->remainder.find(this->m_delimiter);
+  if (next_chunk_pos == -1) {
+    if (!this->remainder.empty()) {
+      simple_string ret = this->remainder;
+      this->remainder = "";
+      return ret;
+    }
+    this->done = true;
+    return "";
+  }
+  simple_string ret = this->remainder.substr(0, next_chunk_pos);
+  this->remainder =
+      this->remainder.substr(next_chunk_pos + this->m_delimiter.size());
+  return ret;
+}
+
+simple_string_split_iterator &simple_string_split_iterator::operator++() {
+  this->curr_chunk = this->find_next_chunk();
+  return *this;
+}
+
+simple_string_split_iterator simple_string_split_iterator::operator++(int) {
+  simple_string_split_iterator tmp = *this;
+  simple_string ret = tmp.find_next_chunk();
+  this->curr_chunk = this->find_next_chunk();
+  return tmp;
+}
+
+bool simple_string_split_iterator::operator==(
+    const simple_string_split_iterator &other) const {
+  return this->done && other.done;
+}
+
+bool simple_string_split_iterator::operator!=(
+    const simple_string_split_iterator &other) const {
+  return !(*this == other);
+}
+
+simple_string simple_string_split_iterator::operator*() {
+  return this->curr_chunk;
+}
+
+simple_string_split_iterator simple_string_split_iterator::begin() {
+  return *this;
+}
+
+simple_string_split_iterator simple_string_split_iterator::end() {
+  return {"", "", true};
+}
+
+simple_string_split_iterator
+simple_string::split_iter(const simple_string &delimiter) const {
+  return {*this, delimiter};
+}

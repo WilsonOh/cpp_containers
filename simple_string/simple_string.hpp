@@ -11,6 +11,7 @@
  */
 class simple_string_iterator;
 class simple_string_const_iterator;
+class simple_string_split_iterator;
 
 /**
  * -----------------------------------------------------------
@@ -64,7 +65,7 @@ public:
    * reference, used for the copy assignment operator
    */
   void swap(simple_string &other) noexcept;
-  std::size_t size();
+  std::size_t size() const;
   /* cout overriding */
   friend std::ostream &operator<<(std::ostream &_stream,
                                   const simple_string &ss);
@@ -85,7 +86,9 @@ public:
   simple_string substr(const std::size_t &start) const;
   int find(const simple_string &needle, const std::size_t &start = 0) const;
   std::vector<simple_string> split(const simple_string &delimiter) const;
-  static simple_string join(const simple_string &delim, const std::vector<simple_string> &words);
+  simple_string_split_iterator split_iter(const simple_string &delimiter) const;
+  static simple_string join(const simple_string &delim,
+                            const std::vector<simple_string> &words);
 };
 
 /**
@@ -155,5 +158,34 @@ public:
   /* Another difference: the const iterator only has the const deference
    * operator! */
   const char &operator*() const;
+};
+
+class simple_string_split_iterator {
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = simple_string;
+  using difference_type = std::ptrdiff_t;
+  using pointer = simple_string *;
+  using reference = simple_string &;
+
+  friend class simple_string;
+
+  simple_string remainder;
+  simple_string m_delimiter;
+  simple_string curr_chunk;
+  simple_string find_next_chunk();
+  bool done = false;
+
+  simple_string_split_iterator(const simple_string &haystack,
+                               const simple_string &delimeter,
+                               bool end = false);
+
+public:
+  simple_string_split_iterator begin();
+  simple_string_split_iterator end();
+  simple_string_split_iterator &operator++();
+  simple_string_split_iterator operator++(int);
+  bool operator==(const simple_string_split_iterator &other) const;
+  bool operator!=(const simple_string_split_iterator &other) const;
+  value_type operator*();
 };
 #endif //
