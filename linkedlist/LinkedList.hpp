@@ -1,6 +1,7 @@
 #ifndef LINKED_LIST_HPP
 #define LINKED_LIST_HPP
 
+#include <algorithm>
 #include <initializer_list>
 #include <iostream>
 #include <iterator>
@@ -14,7 +15,7 @@ template <typename T> class LinkedListConstIterator;
 template <typename T> struct Node {
   T data;
   std::unique_ptr<Node> next;
-  Node* prev;
+  Node *prev;
 
   Node(T _data) : data(_data) {}
 };
@@ -22,7 +23,7 @@ template <typename T> struct Node {
 template <typename T> class LinkedList {
 
   std::unique_ptr<Node<T>> head;
-  Node<T>* tail;
+  Node<T> *tail;
   std::size_t _size = 0;
 
 public:
@@ -46,6 +47,7 @@ public:
     if (empty()) {
       head.reset(new_node);
       tail = new_node;
+      head->prev = nullptr;
     } else {
       tail->next.reset(new_node);
       tail->next->prev = tail;
@@ -59,10 +61,12 @@ public:
     if (empty()) {
       head.reset(new_node);
       tail = new_node;
+      head->prev = nullptr;
     } else {
       head->prev = new_node;
       head->prev->next.reset(new_node);
       head.swap(head->prev->next);
+      head->prev = nullptr;
     }
   }
 
@@ -94,7 +98,85 @@ public:
     }
     _size -= 1;
     head = std::move(head->next);
+    head->prev = nullptr;
     return ret;
+  }
+
+  void insert(std::size_t pos, LinkedList<T> other) {
+    Node<T> *curr = head.get();
+    while (pos--) {
+      curr = curr->next.get();
+    }
+    curr->next->prev = other.tail;
+    curr->next.swap(other.tail->next);
+    curr->next = std::move(other.head);
+    curr->next->prev = curr;
+  }
+
+  void insert(std::size_t pos, T val) {
+    if (pos < 0 || pos > this->size()) {
+      return;
+    }
+    if (pos == 0) {
+      push_left(val);
+      return;
+    }
+    if (pos == this->size()) {
+      push_right(val);
+      return;
+    }
+    Node<T> *new_node = new Node(val);
+    Node<T> *curr = head.get();
+    while (pos--) {
+      curr = curr->next.get();
+    }
+    curr->prev->next.swap(new_node->next);
+    curr->prev->next.reset(new_node);
+    new_node->prev = curr->prev;
+    new_node->next->prev = new_node;
+    _size++;
+  }
+
+  void remove(std::size_t pos) {
+    if (pos < 0 || pos > this->size()) {
+      return;
+    }
+    if (pos == 0) {
+      pop_left();
+      return;
+    }
+    if (pos == this->size()) {
+      pop_right();
+      return;
+    }
+    Node<T> *curr = head.get();
+    while (pos--) {
+      curr = curr->next.get();
+    }
+    curr->next->prev = curr->prev;
+    curr->prev->next.swap(curr->next);
+    _size--;
+  }
+
+  void remove(std::size_t start, std::size_t num_elems) {
+    Node<T> *start_ptr = head.get();
+    while (start--) {
+      start_ptr = start_ptr->next.get();
+    }
+    Node<T> *end_ptr = start_ptr->prev;
+    while (num_elems--) {
+      end_ptr = end_ptr->next.get();
+    }
+    end_ptr->next->prev = start_ptr->prev;
+    start_ptr->prev->next.swap(end_ptr->next);
+  }
+
+  void print_rev() {
+    Node<T> *curr = tail;
+    while (curr != nullptr) {
+      std::cout << curr->data << ' ';
+      curr = curr->prev;
+    }
   }
 
   T first() { return head->data; }
