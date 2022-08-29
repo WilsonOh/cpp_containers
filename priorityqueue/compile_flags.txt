@@ -1,0 +1,11 @@
+-g
+-Wall
+-Wextra
+-Wno-reorder
+-Werror=return-type
+-Wconversion
+-Wdeprecated
+-fvisibility=hidden
+-O2
+-std=c++20
+-fsanitize=address,undefined
