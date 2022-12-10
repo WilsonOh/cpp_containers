@@ -1,4 +1,3 @@
-#include "Iterable.hpp"
 #include <functional>
 #include <ostream>
 #include <vector>
@@ -22,7 +21,7 @@ template<typename T, typename Comparator = std::greater_equal<T>> class Priority
   }
 
   void heapify() {
-    for (int i = static_cast<int>(items.size() - 1); i >= 0; --i) { heap_swap_children(items, items.size(), i); }
+    for (int i = int(items.size() - 1); i >= 0; --i) { heap_swap_children(items, items.size(), i); }
   }
 
   std::vector<int> items;
